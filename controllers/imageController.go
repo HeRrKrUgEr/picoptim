@@ -56,6 +56,18 @@ func OptimizeImage(c *gin.Context) {
 		quality = 80 // default quality if parsing fails or invalid value provided
 	}
 
+	largeurStr := c.PostForm("largeur")
+	largeur, err := strconv.Atoi(largeurStr)
+	if err != nil || largeur < 1 {
+		largeur = 0 // default width if parsing fails or invalid value provided
+	}
+
+	hauteurStr := c.PostForm("hauteur")
+	hauteur, err := strconv.Atoi(hauteurStr)
+	if err != nil || hauteur < 1 {
+		hauteur = 0 // default height if parsing fails or invalid value provided
+	}
+
 	if useCase == "" || outputFormat == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Use case and output format are required"})
 		return
@@ -71,6 +83,8 @@ func OptimizeImage(c *gin.Context) {
 		targetWidth, targetHeight = 1200, 800
 	case "prop":
 		targetWidth, targetHeight = 640, 480
+	case "perso":
+		targetWidth, targetHeight = largeur, hauteur
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid use case"})
 		return

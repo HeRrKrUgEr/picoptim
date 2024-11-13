@@ -188,9 +188,9 @@ p.no-select {
 .cube-face {
   position: absolute;
   inset: 0;
-  background: #007fab;
-  border: solid 1px #f5d22f;
-  animation: colorswap 4s infinite;
+  background: #0c4a6e;
+  border: solid 1px #0ea5e9;
+  animation: colorswap 2s infinite;
 }
 .cube-face.shadow {
   transform: translateZ(-80px);
@@ -221,7 +221,7 @@ p.no-select {
     transform: rotateX(45deg) rotateY(0) rotateZ(45deg);
     animation-timing-function: cubic-bezier(0.17, 0.84, 0.44, 1);
   }
-  50% {
+  30% {
     transform: rotateX(45deg) rotateY(0) rotateZ(225deg);
     animation-timing-function: cubic-bezier(0.76, 0.05, 0.86, 0.06);
   }
@@ -232,17 +232,13 @@ p.no-select {
 }
 
 @keyframes colorswap {
-  0% {
-    background: #f5d22f;
-    border: solid 1px #007fab;
+  30% {
+    background: #0ea5e9;
+    border: solid 1px #0c4a6e;
   }
-  45% {
-    background: #007fab;
-    border: solid 1px #f5d22f;
-  }
-  100% {
-    background: #f5d22f;
-    border: solid 1px #007fab;
+  70% {
+    background: #0c4a6e;
+    border: solid 1px #0ea5e9;
   }
 }
 
