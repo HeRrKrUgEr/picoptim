@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        rel="stylesheet">
+    <link href="static/output.css" rel="stylesheet">
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <title>Redimensionner / Convertir</title>
+</head>
+
+<body class="bg-gray-50" x-data="imageOptimizer()" x-init="document.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dragOver(event);
+        event.dataTransfer.dropEffect = 'copy';
+    });
+    document.addEventListener('dragleave', (event) => {
+    event.preventDefault();
+    dragLeave(event);
+    });
+    document.addEventListener('drop', (event) => {
+        event.preventDefault();
+        handleDrop(event);
+    });">
+
+    <div x-show="isDragging"
+        class="overlay-drag z-10 bg-gray-900 bg-opacity-80 absolute h-screen w-screen transition flex items-center justify-center p-20 lg:p-32">
+        <div
+            class="container border-dashed border-4 border-gray-200 rounded-lg h-full flex items-center justify-center">
+            <h3 class="font-semibold text-2xl uppercase text-gray-200 block bg-">Déposez vos
+                fichiers ici...</h3>
+        </div>
+    </div>
+
+
+    <!-- Overlay for processing -->
+    <div x-show="isProcessing" class="overlay">
+        <div class="scene">
+            <div class="cube-wrapper">
+                <div class="cube">
+                    <div class="cube-faces">
+                        <div class="cube-face shadow"></div>
+                        <div class="cube-face bottom"></div>
+                        <div class="cube-face top"></div>
+                        <div class="cube-face left"></div>
+                        <div class="cube-face right"></div>
+                        <div class="cube-face back"></div>
+                        <div class="cube-face front"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="processing-text">Traitement des images en cours...</div>
+    </div>
+
+
+
+    <nav class="block w-full max-w-screen-xl px-4 py-2 mx-auto bg-white shadow-md rounded-md lg:px-8 lg:py-2">
+        <div class="container flex flex-wrap items-center justify-between mx-auto text-slate-800">
+            <img src="static/img/airuma.webp" alt="logo airuma" class="h-full header-logo" />
+
+            <div class="hidden lg:block">
+                <ul class="flex flex-col gap-2 mt-2 mb-4 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6">
+                    <li class="flex items-center p-1 text-sm gap-x-2 text-slate-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="h-6 w-6 text-slate-500">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                        </svg>
+
+                        <a href="#" class="flex items-center">
+                            Convertir / Redimensionner
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <button
+                class="relative ml-auto h-6 max-h-[40px] w-6 max-w-[40px] select-none rounded-lg text-center align-middle text-xs font-medium uppercase text-inherit transition-all hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none lg:hidden"
+                type="button">
+                <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </span>
+            </button>
+        </div>
+    </nav>
+
+
+    <div class="mt-12 flex flex-col items-center justify-center" x-show="!files.length && !optimizedImages.length">
+        <img class="w-auto max-w-full " src="static/img/drag.webp" alt="logo drag n drop" />
+        <p class="text-gray-600 no-select font-semibold text-md mb-2">Déposez vos images directement sur la page
+        </p>
+        <p class="text-gray-600 no-select font-semibold text-md mb-2">ou</p>
+    </div>
+
+
+    <button @click="selectFiles" x-show="!optimizedImages.length"
+        class="btn bg-indigo-400 max-w-60 text-white font-medium w-full rounded-lg px-3 py-2 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-teal-300 transition shadow-sm hover:shadow-lg mb-2 mx-auto block"
+        :class="{'mt-4': files.length}">
+        Ajouter des fichiers<br>
+        <span class="text-xs text-gray-200 block no-select font-light">Formats acceptés : JPEG, PNG, ZIP</span>
+    </button>
+    <button @click="reinit" x-show="optimizedImages.length"
+        class="btn bg-indigo-400 max-w-60 text-white font-medium w-full rounded-lg px-3 py-2 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-teal-300 transition shadow-sm hover:shadow-lg mb-2 mx-auto block mt-4">
+        Réinitialiser tout
+    </button>
+    <input type="file" id="fileInput" multiple class="hidden" @change="handleFileChange">
+
+
+    <div class="container max-w-screen-xl px-4 py-2 mx-auto bg-white shadow-md rounded-md lg:px-8 lg:py-3"
+        x-show="files.length || optimizedImages.length">
+
+
+        <div class="bg-white mt-8">
+            <!-- Display dropped files with thumbnails, sizes, and upload progress -->
+            <div class="w-full border-gray-300 border-dashed border-2 rounded-lg mt-6 mb-8 p-4"
+                x-show="files.length && !optimizedImages.length">
+                <div class="flex flex-wrap  gap-2">
+                    <template x-for="(file, index) in files" :key="index">
+                        <div class="flex items-start mb-4 p-2">
+                            <img :src="file.preview" x-show="!file.name.toLowerCase().endsWith('heic')" alt="Thumbnail"
+                                class="w-12 h-12 mr-2 rounded-md object-cover">
+                            <div class="w-full">
+                                <p class="file-name text-xs font-medium text-slate-700" :title="file.name"
+                                    x-text="truncateFileName(file.name,25)">
+                                </p>
+                                <p class="text-xs text-slate-500 font-light" x-text="formatFileSize(file.size)">
+                                </p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <div class="w-full border-gray-300 border-2 rounded-lg mt-6 mb-8 p-6" x-show="optimizedImages.length">
+                <div class="flex flex-wrap   gap-2">
+                    <template x-for="(result, index) in optimizedImages" :key="index">
+                        <div class="flex items-start mb-4 p-2">
+                            <img :src="result.Preview" alt="Thumbnail" class="w-12 h-12 mr-2 rounded-md object-cover">
+                            <div>
+                                <p class="file-name font-medium text-xs text-slate-700" :title="result.name"
+                                    x-text="truncateFileName(result.name,25)">
+                                </p>
+                                <p class="text-xs text-slate-500 font-light"
+                                    x-text="formatFileSize(result.originalSize) + '  ->  ' + formatFileSize(result.optimizedSize) + '  ' + result.reduction + '%'">
+                                </p>
+                                <a :href="result.DownloadUrl" class="text-indigo-600 font-medium text-xs mt-1"
+                                    download>Télécharger</a>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="mt-8 text-center">
+                    <button x-show="optimizedImages.length > 0" @click="downloadZip" class="btn bg-teal-600 max-w-80 text-white font-medium w-full rounded-lg px-3 py-2 hover:bg-teal-700 focus:outline-none
+                        focus:ring-2 focus:ring-teal-300 transition shadow-sm hover:shadow-lg mb-2 mx-auto block"
+                        target="_blank">
+                        Télécharger toutes les images
+                    </button>
+                </div>
+            </div>
+
+
+            <!--Use Case Dropdown-->
+            <div class="grid grid-cols-2 gap-4 items-start ">
+                <div class="w-full relative  border-gray-300 border-2 p-4 rounded-lg">
+                    <h2 class="table px-3 bg-white text-lg font-medium text-gray-600 -mt-8 mb-4">Dimensions des
+                        Images</h2>
+                    <nav class="flex flex-col gap-1 p-2">
+                        <div role="button"
+                            class="flex  items-center rounded-lg p-0 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100">
+                            <label for="size_keep" class="flex  cursor-pointer items-center px-3 py-2">
+                                <div class="inline-flex items-center">
+                                    <label class="relative flex items-center cursor-pointer" for="size_keep">
+                                        <input x-model="useCase" value="keep" name="use-case" type="radio"
+                                            class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-slate-400 transition-all"
+                                            id="size_keep" checked />
+                                        <span
+                                            class="absolute bg-slate-800 w-3 h-3 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity duration-200 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></span>
+                                    </label>
+                                    <label class="ml-2 text-slate-600 cursor-pointer text-sm" for="size_keep">
+                                        Préserver les dimensions
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+                        <div role="button"
+                            class="flex  items-center rounded-lg p-0 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100">
+                            <label for="size_hero" class="flex  cursor-pointer items-center px-3 py-2">
+                                <div class="inline-flex items-center">
+                                    <label class="relative flex items-center cursor-pointer" for="size_hero">
+                                        <input x-model="useCase" value="hero" name="use-case" type="radio"
+                                            class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-slate-400 transition-all"
+                                            id="size_hero" />
+                                        <span
+                                            class="absolute bg-slate-800 w-3 h-3 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity duration-200 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></span>
+                                    </label>
+                                    <label class="ml-2 text-slate-600 cursor-pointer text-sm" for="size_hero">
+                                        En-tête pleine largeur
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+                        <div role="button"
+                            class="flex  items-center rounded-lg p-0 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100">
+                            <label for="size_page" class="flex  cursor-pointer items-center px-3 py-2">
+                                <div class="inline-flex items-center">
+                                    <label class="relative flex items-center cursor-pointer" for="size_page">
+                                        <input x-model="useCase" value="page" name="use-case" type="radio"
+                                            class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-slate-400 transition-all"
+                                            id="size_page" />
+                                        <span
+                                            class="absolute bg-slate-800 w-3 h-3 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity duration-200 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></span>
+                                    </label>
+                                    <label class="ml-2 text-slate-600 cursor-pointer text-sm" for="size_page">
+                                        Page Site / Hôtel
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+                        <div role="button"
+                            class="flex  items-center rounded-lg p-0 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100">
+                            <label for="size_prop" class="flex  cursor-pointer items-center px-3 py-2">
+                                <div class="inline-flex items-center">
+                                    <label class="relative flex items-center cursor-pointer" for="size_prop">
+                                        <input x-model="useCase" value="prop" name="use-case" type="radio"
+                                            class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-slate-400 transition-all"
+                                            id="size_prop" />
+                                        <span
+                                            class="absolute bg-slate-800 w-3 h-3 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity duration-200 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></span>
+                                    </label>
+                                    <label class="ml-2 text-slate-600 cursor-pointer text-sm" for="size_prop">
+                                        Proposition de Séjour
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+
+                    </nav>
+
+                </div>
+                <div class="w-full relative  border-gray-300 border-2 p-4 rounded-lg">
+                    <h2 class="table px-3 bg-white text-lg font-medium text-gray-600 -mt-8 mb-4">Format de
+                        Sortie</h2>
+                    <nav class="flex flex-col gap-1 p-2">
+                        <div role="button"
+                            class="flex  items-center rounded-lg p-0 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100">
+                            <label for="format-jpg" class="flex  cursor-pointer items-center px-3 py-2">
+                                <div class="inline-flex items-center">
+                                    <label class="relative flex items-center cursor-pointer" for="format-jpg">
+                                        <input x-model="outputFormat" value="jpg" name="oformat" type="radio"
+                                            class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-slate-400 transition-all"
+                                            id="format-jpg" checked />
+                                        <span
+                                            class="absolute bg-slate-800 w-3 h-3 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity duration-200 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></span>
+                                    </label>
+                                    <label class="ml-2 text-slate-600 cursor-pointer text-sm" for="format-jpg">
+                                        <p class="font-medium">
+                                            JPG
+                                        </p>
+                                        <p class="text-slate-500 font-light text-xs">
+                                            Recommandé, bonne compression, compatibilité universelle
+                                        </p>
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+                        <div role="button"
+                            class="flex  items-center rounded-lg p-0 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100">
+                            <label for="format_webp" class="flex  cursor-pointer items-center px-3 py-2">
+                                <div class="inline-flex items-center">
+                                    <label class="relative flex items-center cursor-pointer" for="format_webp">
+                                        <input x-model="outputFormat" value="webp" name="oformat" type="radio"
+                                            class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-slate-400 transition-all"
+                                            id="format_webp" />
+                                        <span
+                                            class="absolute bg-slate-800 w-3 h-3 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity duration-200 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></span>
+                                    </label>
+                                    <label class="ml-2 text-slate-600 cursor-pointer text-sm" for="format_webp">
+                                        <p class="font-medium">
+                                            WEBP
+                                        </p>
+                                        <p class="text-slate-500 font-light text-xs">
+                                            Nouveau standard, meilleure compression et transparence,
+                                            compatibilité
+                                            réduite
+                                        </p>
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+                        <div role="button"
+                            class="flex  items-center rounded-lg p-0 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100">
+                            <label for="format_png" class="flex  cursor-pointer items-center px-3 py-2">
+                                <div class="inline-flex items-center">
+                                    <label class="relative flex items-center cursor-pointer" for="format_png">
+                                        <input x-model="outputFormat" value="png" name="oformat" type="radio"
+                                            class="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-slate-400 transition-all"
+                                            id="format_png" />
+                                        <span
+                                            class="absolute bg-slate-800 w-3 h-3 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity duration-200 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></span>
+                                    </label>
+                                    <label class="ml-2 text-slate-600 cursor-pointer text-sm" for="format_png">
+                                        <div>
+                                            <p class="font-medium">
+                                                PNG
+                                            </p>
+                                            <p class="text-slate-500 font-light text-xs">
+                                                Fichiers volumineux, pour fond transparents uniquement (logos)
+                                            </p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </label>
+                        </div>
+
+
+                    </nav>
+                    <div class="mb-4" x-show="outputFormat === 'jpg' || outputFormat === 'webp'">
+                        <label class="block text-sm font-light text-slate-600 mt-2">Qualité de l'image <span
+                                x-text="quality" class="font-medium"></span></label>
+                        <input type="range" min="1" max="100" x-model="quality" class="w-full bg-indigo-700">
+                        <p class="text-xs text-gray-600 no-select font-light"> Note
+                            : Une qualité plus élevée produit des fichiers plus volumineux.</p>
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!--Submit Button-->
+            <div class="mt-8 text-center" x-show="!optimizedImages.length">
+                <button @click="optimizeImages"
+                    class="btn bg-indigo-700 max-w-60 text-gray-200 w-full rounded-lg py-3 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
+                    :disabled="files.length === 0">
+                    Optimiser les Images
+                </button>
+                <p class="text-red-400 font-semibold" x-show="errorMessage != ''" x-text="errorMessage"></p>
+            </div>
+
+
+        </div>
+    </div>
+
+    <script>
+
+
+        function imageOptimizer () {
+            return {
+                files: [],
+                useCase: 'keep',
+                outputFormat: 'jpg',
+                quality: 80,
+                formatInfo: null,
+                optimizedImages: [],
+                zipDownloadUrl: '',
+                uidPath: '',
+                isDragging: false,
+                isProcessing: false,
+                errorMessage: "",
+                acceptedTypes: ["jpg", "jpeg", "webp", "png", "heic", "zip"],
+                formatDescriptions: {
+                    jpg: {
+                        title: "JPEG (JPG)",
+                        description: "JPEG est idéal pour les images avec beaucoup de couleurs et de détails, comme les photographies. Pros : Bonne compression, largement supporté. Cons : Format avec perte de qualité lors de la compression."
+                    },
+                    png: {
+                        title: "PNG",
+                        description: "PNG est parfait pour les images nécessitant une transparence ou une qualité maximale. Pros : Compression sans perte, supporte la transparence. Cons : Taille de fichier plus grande par rapport à JPEG et WebP."
+                    },
+                    webp: {
+                        title: "WebP",
+                        description: "WebP est un format moderne offrant une bonne qualité et une petite taille de fichier. Pros : Bonne compression, supporte les images animées et la transparence. Cons : Pas encore supporté par certains anciens navigateurs."
+                    }
+                },
+                selectFiles () {
+                    document.getElementById('fileInput').click();
+                },
+                dragOver (event) {
+                    event.preventDefault();
+                    this.isDragging = true;
+                },
+                dragLeave (event) {
+                    event.preventDefault();
+                    this.isDragging = false;
+                },
+                handleDrop (event) {
+
+                    event.preventDefault();
+                    this.dragLeave(event); // reset the background color
+                    this.handleFileChange(event);
+
+                },
+                handleFileChange (event) {
+                    isProcessing = true;
+                    if (event.dataTransfer.items) {
+                        for (let i = 0; i < event.dataTransfer.items.length; i++) {
+                            if (event.dataTransfer.items[i].kind === 'file') {
+                                const file = event.dataTransfer.items[i].getAsFile();
+                                this.handleFile(file);
+
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < event.dataTransfer.files.length; i++) {
+                            const file = event.dataTransfer.files[i];
+                            this.handleFile(file);
+                        }
+                    }
+                    isProcessing = false;
+                },
+                handleFile (file) {
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    if (this.acceptedTypes.includes(fileExtension)) {
+                        if (fileExtension != "zip") {
+                            this.files.push({
+                                name: file.name,
+                                size: file.size,
+                                preview: URL.createObjectURL(file),
+                                obj: file,
+                                progress: 0
+                            });
+                        }
+                        else {
+                            this.getZipContent(file);
+                        }
+
+                    }
+                },
+                getZipContent (file) {
+                    let _this = this;
+                    console.log("zip");
+                    const reader = new FileReader();
+                    reader.onload = function (evt) {
+                        console.log("reader loaded")
+                        JSZip.loadAsync(evt.target.result).then(function (zip) {
+                            // Extract each file and add to FormData
+                            let extractionPromises = [];
+                            zip.forEach(function (relativePath, zipEntry) {
+                                extractionPromises.push(
+                                    zip.file(zipEntry.name).async("blob").then(function (fileData) {
+                                        // Append each file as a Blob to FormData
+                                        _this.handleFile(new File([fileData], zipEntry.name), zipEntry.name);
+                                    })
+                                );
+                            });
+
+                            // Wait until all files have been extracted and added to FormData
+                            Promise.all(extractionPromises).then(() => {
+                                // Send form data with fetch
+                                return;
+                            }).catch(function (err) {
+                                console.error("Error reading ZIP file:", err);
+                            });
+                        });
+
+
+
+                    }
+                    reader.readAsArrayBuffer(file);
+                },
+
+                updateFormatInfo () {
+                    this.formatInfo = this.formatDescriptions[this.outputFormat] || null;
+                },
+                optimizeImages () {
+                    this.errorMessage = "";
+                    this.isProcessing = true;
+                    const formData = new FormData();
+                    this.files.forEach((file, index) => {
+                        formData.append('images', file.obj);
+                    });
+                    formData.append('use_case', this.useCase);
+                    formData.append('output_format', this.outputFormat);
+                    formData.append('quality', this.quality);
+
+                    fetch('/optimize', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            this.optimizedImages = data.optimized_images;
+                            this.files = [];
+                            this.uidPath = data.uidPath;
+                            this.isProcessing = false;
+                        })
+                        .catch(error => {
+                            console.error('Error optimizing images:', error);
+                            this.isProcessing = false;
+                            this.errorMessage = "Erreur durant le traitement des images: " + error;
+                        });
+                },
+                truncateFileName (fileName, maxLength) {
+                    const extensionIndex = fileName.lastIndexOf(".");
+                    const extension = fileName.slice(extensionIndex);
+                    const baseName = fileName.slice(0, extensionIndex);
+
+                    if (baseName.length + extension.length <= maxLength) {
+                        return fileName; // No need to truncate if it's already short enough
+                    }
+
+                    // Define how much of the base name to keep (with "..." in between)
+                    const lastTwoChars = baseName.slice(-2); // Get the last two characters of the base name
+                    const truncatedLength = maxLength - extension.length - lastTwoChars.length - 3; // 3 for "..."
+
+                    if (truncatedLength <= 0) {
+                        return fileName; // Not enough space to truncate properly
+                    }
+
+                    return baseName.slice(0, truncatedLength) + "…" + lastTwoChars + extension;
+                },
+                downloadZip () {
+                    const formData = new FormData();
+                    formData.append('outputDir', this.uidPath);
+                    fetch('/download-zip', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            this.downloadFile(data.zip_download_url);
+                        })
+                        .catch(error => {
+                            console.error('Error downloading zip:', error);
+                            errorMessage = "Error downloading zip: " + error;
+                        });
+                },
+                downloadFile (filePath) {
+                    // Create a temporary anchor element
+                    const link = document.createElement('a');
+                    link.href = filePath; // Set the href to the file path
+                    link.download = ''; // Optional: specify a filename if needed
+
+                    // Append the link to the body (required for Firefox)
+                    document.body.appendChild(link);
+
+                    // Programmatically click the link to trigger the download
+                    link.click();
+
+                    // Remove the link from the document
+                    document.body.removeChild(link);
+                },
+                formatFileSize (bytes) {
+                    const units = ["Bytes", "KB", "MB", "GB", "TB"];
+                    let size = bytes;
+                    let unitIndex = 0;
+
+                    while (size >= 1024 && unitIndex < units.length - 1) {
+                        size /= 1024;
+                        unitIndex++;
+                    }
+
+                    return `${size.toFixed(2)} ${units[unitIndex]}`;
+                }
+
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+{
+  "configurations": [
+    {
+      "type": "go",
+      "name": "debug main.go",
+      "request": "launch",
+      "mode": "auto",
+      "args": [],
+      "program": "/home/krugz/Devz/Perso/picoptim/main.go"
+    }
+  ]
+}
